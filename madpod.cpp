@@ -13,7 +13,7 @@ using namespace std;
 
 #define MIN_DIST_BOOST 5000
 #define MIN_ANGLE_BOOST 2
-#define SLOW_DOWN_DIST  (CHECKPOINT_RADIUS * 2)
+#define SLOW_DOWN_DIST  (CHECKPOINT_RADIUS * 4.0)
 
 /**
  * Auto-generated code below aims at helping you parse
@@ -23,10 +23,12 @@ using namespace std;
  typedef struct pod{
     int x,y;
     int lastx, lasty;
+    int nextx, nexty;
     int cpx, cpy;
-    int cdist, angle;
-    int speed;
+    float cdist, angle;
+    float speed;
     bool boost_used;
+
  }pod_t;
 
  pod_t pod = {0, };
@@ -37,7 +39,7 @@ using namespace std;
     cin >> x >> y >> cpx >> cpy >> cpdist >> cpang; cin.ignore();
     pod->x = x;
     pod->y = y;
-    pod->angle = cpang;
+    pod->angle = abs(cpang);
     pod->cdist = cpdist;
     pod->cpx = cpx;
     pod->cpy = cpy;
@@ -46,30 +48,35 @@ using namespace std;
 
 bool TryUseBoost() {
 
-    if(!pod.boost_used && (abs(pod.angle) < MIN_ANGLE_BOOST) && pod.cdist > MIN_DIST_BOOST){
+    if(!pod.boost_used && (pod.angle < MIN_ANGLE_BOOST) && pod.cdist > MIN_DIST_BOOST){
         pod.boost_used = true;
         return true;
     }
     return false;
 }
 
-int AngleCompenstaion() {
-    float speedFactor = (1 - abs((float)pod.angle)/90);
+float AngleCompenstaion() {
+    float speedFactor = (1 - pod.angle/90);
     if(speedFactor < 0){
         speedFactor = 0;
     }
-    return round(speedFactor * MAX_THRUST);
+    return speedFactor;
 }
 
 float CheckpointDistCompensation() {
-    float speedFactor(1 - (float)pod.cdist/SLOW_DOWN_DIST);
+    float speedFactor(1 - pod.cdist/SLOW_DOWN_DIST);
     if(speedFactor < 0){
         speedFactor = 1;
     }
-    return round(speedFactor * MAX_THRUST);
+    return speedFactor;
+}
+
+float Comp2(){
+    return round(CheckpointDistCompensation() * AngleCompenstaion() * MAX_THRUST) ;
 }
 
 float Compensation(){
+
     if(pod.cdist <= (SLOW_DOWN_DIST) ){
         cerr << "DISTANCE SPEED\n" <<endl;
         return CheckpointDistCompensation();
@@ -80,12 +87,17 @@ float Compensation(){
     }
 }
 
-void GetNextPosition(){
+void GetLastPosition(){
     pod.lastx = pod.x;
     pod.lasty = pod.y;
-    if(pod.lastx == pod.x || pod.lasty == pod.y){
-        return;
-    }
+}
+
+void GetNextPosition(){
+    int xdiff = pod.x - pod.lastx;
+    int ydiff = pod.y - pod.lasty;
+
+    pod.nextx = xdiff + pod.x;
+    pod.nexty = ydiff + pod.y;
 }
 
 
@@ -96,15 +108,23 @@ int main()
     while (1) {
 
         GetPodInfo(&pod);
+        //GetNextPosition();
         int opponent_x;
         int opponent_y;
         cin >> opponent_x >> opponent_y; cin.ignore();
 
-        int fac = AngleCompenstaion();
-        int fac2 = CheckpointDistCompensation();
-        
-        pod.speed = Compensation();
-        GetNextPosition();
+        //float fac = AngleCompenstaion();
+        //float fac2 = CheckpointDistCompensation();
+        if(pod.angle < 1){
+            pod.speed = 100;
+        }else{
+            float comp2 = Comp2();
+            //pod.speed = round(Compensation() * MAX_THRUST);
+            pod.speed = comp2;
+        }
+        // float comp2 = Comp2();
+        // pod.speed = round(Compensation() * MAX_THRUST);
+        // pod.speed = comp2;
 
         cout << pod.cpx << " " << pod.cpy << " ";
         if(TryUseBoost()){
@@ -120,8 +140,11 @@ int main()
         //cerr << "Distance: " << cpdist <<"\nAngle " << cpang << "\nThrust: "<< thrust<< endl;
         cerr << "Distance: " << pod.cdist <<"\nAngle " << abs(pod.angle) << "\nThrust: "<< pod.speed << endl;
         cerr << "X: " << pod.x <<"\nY " << pod.y << endl;
-        cerr << "lX: " << pod.lastx <<"\nlY " << pod.lasty << endl;
-        cerr << "\nBoost used: " << pod.boost_used << "\nAng Speed: " << fac <<"\nDist Speed: " << fac2 << endl;
+        //cerr << "lX: " << pod.lastx <<"\nlY " << pod.lasty << endl;
+        //cerr << "nX: " << pod.nextx <<"\nnY " << pod.nexty << endl;
+        //cerr << "\nBoost used: " << pod.boost_used << "\nAng fac: " << fac <<"\nDist fac: " << fac2 <<"\nComp2: " << comp2 << endl;
+
+        GetLastPosition();
         }  
 }
 
