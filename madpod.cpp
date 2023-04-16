@@ -14,10 +14,6 @@ using namespace std;
 #define RADIUS_MULTIPLIER       3.0
 #define SLOW_DOWN_DIST          (CHECKPOINT_RADIUS * RADIUS_MULTIPLIER)
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
 
  typedef struct pod{
     int x,y;
@@ -45,56 +41,52 @@ using namespace std;
 
 
 bool TryUseBoost() {
-    if(!pod.boost_used && (pod.angle < MIN_ANGLE_BOOST) && pod.cdist > MIN_DIST_BOOST){
-        pod.boost_used = true;
-        return true;
+    if(!pod.boost_used && (pod.angle < MIN_ANGLE_BOOST) && pod.cdist > MIN_DIST_BOOST){ // Use boost only if angle is narrow enough and distance far enough
+        pod.boost_used = true;                                                          // This ensures that the pod does not overshoot the checkpoint, if it is too close.
+        return true;                                                                    // Also if the angle is wrong the boost wont move us towards the CP optimally.
     }
     return false;
 }
 
-float AngleCompenstaion() {
-    float speedFactor = (1 - pod.angle/90);
+float AngleCompenstaion() {                                                             // If the angle is equal or over 90 deg, the speedfactor will be 0
+    float speedFactor = (1 - pod.angle/90);                                             // Else the pod will be slower for a wider angle and faster when the angle is most narrow.
     if(speedFactor < 0){
         speedFactor = 0;
     }
     return speedFactor;
 }
 
-float CheckpointDistCompensation() {
-    float speedFactor(1 - pod.cdist/SLOW_DOWN_DIST);
-    if(speedFactor < 0){
-        speedFactor = 1;
-    }
-    return speedFactor;
-}
+float CheckpointDistCompensation() {                                                    // Similar logic to AngleCompensation(). Start to slow down if we reach SLOW_DOWN_DIST
+    return (1 - pod.cdist/SLOW_DOWN_DIST);                                              // The closer we are, the more we slow down
+}                                                                                           
 
 float SpeedCompensation(){  // Chooses if 
     float speedFactor;
-    if(pod.cdist <= (SLOW_DOWN_DIST) ){
+    if(pod.cdist <= (SLOW_DOWN_DIST) ){                                                 // Only call CheckpointDistCompensation(), when we are in range of SLOW_DOWN_DIST
         cerr << "CP close\n" <<endl;
         speedFactor = CheckpointDistCompensation();
     }
     else{
-        cerr << "Angle too wide\n" <<endl;
+        cerr << "Angle too wide\n" <<endl;                                              // Else comepensate for angle
         speedFactor = AngleCompenstaion();
     }
     return round(speedFactor * MAX_SPEED);
 }
 
 
-void GetLastPosition(){
-    pod.lastx = pod.x;
+void GetLastPosition(){                                                                 // Needed for calculating next position
+    pod.lastx = pod.x;                                                                  
     pod.lasty = pod.y;
 }
 
 void GetNextPosition(){
-    static bool initflag = false; // Sometimes the 1st checkpoint coord-s are not properly set
+    static bool initflag = false;                                                        // Sometimes the 1st checkpoint coord-s are not properly set
     if(initflag){
-        int xdiff = pod.x - pod.lastx;
+        int xdiff = pod.x - pod.lastx;                                                   // Once we have prev pos, we can calculate the difference between the last and current pos.
         int ydiff = pod.y - pod.lasty;
 
-        pod.cpx -= (xdiff * RADIUS_MULTIPLIER);
-        pod.cpy -= (ydiff * RADIUS_MULTIPLIER);
+        pod.cpx -= (xdiff * RADIUS_MULTIPLIER);                                          // If we have the difference coordinates we can change the perceived checkpoint from the pods POV
+        pod.cpy -= (ydiff * RADIUS_MULTIPLIER);                                          // This ensures that the pod wont drive until the CP center, the game's "intertia" will carry the pod on
     }
     else initflag = true;   
 }
@@ -102,7 +94,6 @@ void GetNextPosition(){
 
 int main()
 {
-    int lastx, lasty;
     // game loop
     while (1) {
         
